@@ -1,6 +1,8 @@
 ---
 name: parallel-tasks
 description: Execute multiple tasks in parallel with timeout protection, error isolation, and real-time progress feedback. Use when user says "run these in parallel", "parallel execution", "concurrent tasks", or wants multiple independent tasks done simultaneously with proper error handling and timeout control.
+author: qiukui666
+homepage: https://github.com/qiukui666/openclaw-skill-parallel-tasks
 ---
 
 # Parallel Tasks Skill
