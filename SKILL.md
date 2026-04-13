@@ -45,57 +45,115 @@ Task 3 ─┘
 ```
 /parallel timeout=300
 - [search-docs] Search for relevant documentation
-- [search-code] Find similar implementations  
+- [search-code] Find similar implementations
 - [analyze] Analyze the results
 ```
 
-### JSON Format for Complex Tasks
+### CLI Usage (scripts/executor.ts)
 
-```
-/parallel
-{
-  "tasks": [
-    { "name": "research", "description": "Research topic X", "timeout": 600 },
-    { "name": "implement", "description": "Implement feature Y", "timeout": 900 },
-    { "name": "test", "description": "Write tests for Z", "timeout": 300 }
-  ]
-}
+```bash
+# Simple usage
+node scripts/executor.ts "Research AI trends" "Research market analysis"
+
+# Named tasks with custom timeout
+node scripts/executor.ts --timeout 600 \
+  --task "[research] Research AI trends" \
+  --task "[implement] Build the feature"
+
+# Read from file (one task per line)
+node scripts/executor.ts --tasks-file my-tasks.txt --max-concurrent 3
+
+# Named task formats (all equivalent):
+# - [name] description
+# - - description (auto-named as task-1, task-2, ...)
+# - 1. description
 ```
 
 ## Implementation
 
 ### Core Execution Pattern
 
+The executor uses a **semaphore pattern** with configurable concurrency:
+
 ```typescript
 // 1. Parse tasks from input
 const tasks = parseTaskInput(input)
 
-// 2. Execute all tasks in parallel
-const results = await Promise.allSettled(
-  tasks.map(task => 
-    sessions_spawn({
-      task: task.description,
-      label: task.name,
-      runTimeoutSeconds: task.timeout || 300
-    })
-  )
-)
+// 2. Execute tasks with concurrency control
+const results: TaskResult[] = []
+const executing: Promise<void>[] = []
 
-// 3. Aggregate results
-const summary = results.map((result, index) => ({
-  task: tasks[index].name,
-  status: result.status,
-  value: result.status === 'fulfilled' ? result.value : null,
-  error: result.status === 'rejected' ? result.reason : null
-}))
+for (const task of tasks) {
+  // Wait if at max concurrency
+  if (executing.length >= maxConcurrent) {
+    await Promise.race(executing)
+  }
+
+  const promise = runTask(task).then(result => {
+    results.push(result)
+    // Remove from executing list
+    const idx = executing.indexOf(promise)
+    if (idx > -1) executing.splice(idx, 1)
+  })
+
+  executing.push(promise)
+}
+
+await Promise.all(executing)
+```
+
+### Task Execution via hermes cli
+
+```typescript
+async function executeTaskViaSpawn(
+  task: Task,
+  timeoutSeconds: number
+): Promise<TaskResult> {
+  const taskId = `parallel-${Date.now()}-${randomId()}`
+
+  return new Promise((resolve) => {
+    const proc = spawn('hermes', [
+      'cli', '--',
+      'sessions_spawn',
+      '--task', `"${task.description}"`,
+      '--label', `"${task.name}"`,
+      '--timeout', String(timeoutSeconds),
+      '--session-id', taskId
+    ], { stdio: ['ignore', 'pipe', 'pipe'] })
+
+    // Timeout handling
+    const timeoutId = setTimeout(() => {
+      proc.kill('SIGTERM')
+      resolve({
+        name: task.name,
+        status: 'timeout',
+        duration: Date.now() - startTime,
+        error: `Exceeded ${timeoutSeconds}s timeout`
+      })
+    }, timeoutSeconds * 1000)
+
+    proc.on('close', (code, signal) => {
+      clearTimeout(timeoutId)
+      if (signal === 'SIGTERM') {
+        resolve({ name: task.name, status: 'timeout', ... })
+      } else if (code === 0) {
+        resolve({ name: task.name, status: 'fulfilled', ... })
+      } else {
+        resolve({ name: task.name, status: 'rejected', ... })
+      }
+    })
+  })
+}
 ```
 
 ### Timeout Protection
 
-- **Default timeout**: 5 minutes (300 seconds)
-- **Configurable**: Set per-task or globally
-- **Behavior**: Task auto-terminates after timeout
-- **Error**: Returns timeout error without blocking other tasks
+| Option | Default | Description |
+|--------|---------|-------------|
+| `timeout` | 300 | Default timeout per task (seconds) |
+| Per-task timeout | - | Override global timeout for specific tasks |
+
+**Behavior**: Task auto-terminates after timeout, other tasks continue.
 
 ### Error Isolation
 
@@ -107,37 +165,42 @@ Each task runs in **complete isolation**:
 | One task hangs | Blocks entire flow | Others continue normally |
 | One task times out | May cascade | Contained, others finish |
 
+### Concurrency Control
+
+| Option | Default | Description |
+|--------|---------|-------------|
+| `maxConcurrent` | 5 | Maximum tasks running simultaneously |
+
+**Pattern**: Semaphore-style - starts N tasks, when one completes, starts next.
+
 ### Progress Feedback
 
-Tasks emit progress as they run:
+Real-time terminal output with colored status:
 
 ```
-🔄 [research] Running... (2/3)
-  └─ Subtask: Searching docs...
-  
-✅ [research] Complete (3s)
-🔄 [implement] Running... (1/3)
-  └─ Subtask: Writing code...
-  
-❌ [test] Failed: Timeout after 300s
-🔄 [analyze] Running... (3/3)
+🚀 Starting 3 tasks in parallel (max 5 concurrent)...
+
+🔄 [task-1] Starting (timeout: 300s)...
+🔄 [task-2] Starting (timeout: 300s)...
+🔄 [task-3] Starting (timeout: 300s)...
+✅ [1/3] [task-1] Complete (23.5s)
+✅ [2/3] [task-2] Complete (45.2s)
+⏱️  [3/3] [task-3] Timeout after 300s
 ```
 
 ## Task Input Formats
 
-### 1. Line-by-line (Simple)
+### 1. Named Tasks (Recommended)
 
 ```
-/parallel
-Task 1 description here
-Task 2 description here
-Task 3 description here
+[research] Research AI trends and write report
+[implement] Build the feature
+[test] Write comprehensive tests
 ```
 
-### 2. Bullet List (Recommended)
+### 2. Bullet List
 
 ```
-/parallel
 - Search for API documentation
 - Find relevant code examples
 - Check for existing implementations
@@ -146,168 +209,141 @@ Task 3 description here
 ### 3. Numbered List
 
 ```
-/parallel
 1. Research authentication patterns
 2. Design database schema
 3. Implement API endpoints
 ```
 
-### 4. Named Tasks
+### 4. Plain Text (auto-named)
 
 ```
-/parallel
-[research] Gather requirements and analyze use cases
-[design] Create system architecture
-[implement] Write production code
+Research AI trends
+Build the feature
+Write tests
 ```
-
-### 5. JSON (Advanced)
-
-```json
-{
-  "tasks": [
-    { "name": "task1", "description": "...", "timeout": 300 },
-    { "name": "task2", "description": "...", "timeout": 600 }
-  ],
-  "options": {
-    "stopOnError": false,
-    "reportProgress": true
-  }
-}
-```
+→ Auto-named: task-1, task-2, task-3
 
 ## Output Format
 
 ### Success Case
 
 ```
-✅ Parallel Execution Complete (5 tasks, 3 succeeded, 2 failed, 2m 30s)
+✅ Parallel Execution Complete
+   3 tasks: 2 succeeded, 1 failed (45.2s total)
 
-┌─────────────────┬──────────┬────────────┐
-│ Task            │ Status   │ Duration   │
-├─────────────────┼──────────┼────────────┤
-│ research        │ ✅ Done  │ 1m 23s    │
-│ design          │ ✅ Done  │ 45s       │
-│ implement       │ ✅ Done  │ 2m 10s    │
-│ test            │ ❌ Failed│ 5m 00s    │
-│ deploy          │ ❌ Error │ 12s       │
-└─────────────────┴──────────┴────────────┘
+┌─────────────────────┬────────────┬────────────┐
+│ Task                │ Status     │ Duration   │
+├─────────────────────┼────────────┼────────────┤
+│ research            │ ✅ fulfilled│ 23.5s      │
+│ implement           │ ✅ fulfilled│ 45.2s      │
+│ test                │ ⏱️ timeout  │ 300.0s    │
+└─────────────────────┴────────────┴────────────┘
 
-📊 Summary:
-- 3 tasks completed successfully
-- 2 tasks failed (see details below)
-
-❌ Task "test" failed:
-   Timeout: exceeded 5 minute limit
-
-❌ Task "deploy" failed:
-   Error: Permission denied
+❌ Failed Tasks:
+   • test: Exceeded 300s timeout
 ```
 
-### Partial Success
+### Exit Codes
 
-```
-⚠️  Parallel Execution Complete (4 tasks, 2 succeeded, 2 pending)
-
-🔄 Still running:
-- [research] 80% complete
-- [implement] Waiting for dependencies
-
-✅ Completed:
-- [design] Done in 45s
-- [analyze] Done in 1m 12s
-```
+| Code | Meaning |
+|------|---------|
+| 0 | All tasks succeeded |
+| 1 | Some tasks failed or timed out |
 
 ## Options
 
-### Global Options
+### CLI Options
 
 | Option | Default | Description |
 |--------|---------|-------------|
-| `timeout` | 300 | Default timeout per task (seconds) |
-| `stopOnError` | false | Stop all tasks if one fails |
-| `reportProgress` | true | Show real-time progress |
+| `--timeout, -to` | 300 | Timeout per task (seconds) |
+| `--max-concurrent, -m` | 5 | Max concurrent tasks |
+| `--stop-on-error` | false | Stop all if one fails |
+| `--no-progress` | false | Suppress progress output |
+| `--tasks-file, -f` | - | Read tasks from file |
+| `--parse` | - | Parse stdin to JSON |
 
-### Per-Task Options
+### Per-Task Options (in task description)
 
-| Option | Description |
-|--------|-------------|
-| `name` | Task identifier for reporting |
-| `description` | What the task should do |
-| `timeout` | Task-specific timeout (overrides global) |
+```
+[name] description (timeout=600)
+```
 
 ## Error Handling
 
 ### Error Types
 
-| Error | Cause | Behavior |
-|-------|-------|----------|
-| `TIMEOUT` | Exceeded timeout | Task terminated, other tasks continue |
-| `ERROR` | Task threw exception | Error captured, other tasks continue |
-| `CANCELLED` | User cancelled | All running tasks terminate |
-| `NO_REPLY` | Task returned no output | Reported as warning |
+| Status | Cause | Behavior |
+|--------|-------|----------|
+| `fulfilled` | Task succeeded | Returns result value |
+| `timeout` | Exceeded timeout | Task terminated, others continue |
+| `rejected` | Process error | Error captured, others continue |
+| `cancelled` | User cancelled | All running tasks terminate |
+| `no_reply` | No output | Reported as warning |
 
-### Best Practices
+## Best Practices
 
 1. **Independent tasks first**: Tasks should not depend on each other
 2. **Set reasonable timeouts**: Don't set 5min if task should take 30s
 3. **Use named tasks**: Easier to debug when something fails
 4. **Keep tasks focused**: One clear goal per task
+5. **Mind concurrency**: Don't set maxConcurrent higher than system can handle
 
 ## Examples
 
 ### Example 1: Research Multiple Topics
 
-```
-/parallel
-- Research Claude Code best practices
-- Find OpenClaw skill examples
-- Search for agent design patterns
+```bash
+node scripts/executor.ts \
+  "Research Claude Code best practices" \
+  "Find OpenClaw skill examples" \
+  "Search for agent design patterns"
 ```
 
-### Example 2: Multi-File Operations
+### Example 2: Named Tasks from File
 
-```
-/parallel
-[read-config] Read all config files in ./config/
-[read-src] Read all source files in ./src/
-[read-tests] Read all test files in ./tests/
+```bash
+# tasks.txt:
+# [research] Research AI trends
+# [implement] Build the feature
+# [test] Write tests
+
+node scripts/executor.ts --tasks-file tasks.txt --timeout 600
 ```
 
 ### Example 3: Parallel Implementation
 
-```
-/parallel timeout=600
-- [backend] Implement user authentication API
-- [frontend] Build login form component
-- [database] Create users table migration
+```bash
+node scripts/executor.ts --timeout 600 \
+  --task "[backend] Implement user authentication API" \
+  --task "[frontend] Build login form component" \
+  --task "[database] Create users table migration"
 ```
 
 ### Example 4: Web Scraping
 
-```
-/parallel
-- Fetch product data from store1.com
-- Fetch product data from store2.com  
-- Fetch product data from store3.com
+```bash
+node scripts/executor.ts \
+  --task "[store1] Fetch product data from store1.com" \
+  --task "[store2] Fetch product data from store2.com" \
+  --task "[store3] Fetch product data from store3.com"
 ```
 
 ## Anti-Patterns
 
 ❌ **Don't use for dependent tasks**:
-```
-/parallel
-- Create user account
-- Send welcome email  ← depends on first task!
+```bash
+# WRONG - second task depends on first!
+node scripts/executor.ts \
+  "Create user account" \
+  "Send welcome email"
 ```
 Use sequential execution instead.
 
 ❌ **Don't use for very fast tasks**:
-```
-/parallel
-- Read file A
-- Read file B
-- Read file C
+```bash
+# WRONG - spawning overhead not worth it
+node scripts/executor.ts "Read file A" "Read file B" "Read file C"
 ```
 The overhead of spawning parallel sessions isn't worth it for sub-second tasks.
 
