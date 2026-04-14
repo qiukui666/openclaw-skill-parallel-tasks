@@ -1,10 +1,10 @@
-# OpenClaw Parallel Tasks Skill
+# 🦞 OpenClaw Parallel Tasks Skill
 
 <div align="center">
 
-**Execute multiple tasks in parallel with enterprise-grade reliability**
+**让 AI 同时处理多个任务，速度快 3-10 倍**
 
-*Timeout protection • Error isolation • Real-time progress feedback*
+⏱️ 超时保护 · 🛡️ 错误隔离 · 📊 实时进度
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 [![OpenClaw](https://img.shields.io/badge/OpenClaw-Skill-blue.svg)](https://github.com/openclaw/openclaw)
@@ -13,271 +13,177 @@
 
 ---
 
-## ✨ Features
+## 🎯 这个 Skill 解决什么问题？
 
-| Feature | Description |
-|---------|-------------|
-| 🚀 **True Parallel Execution** | Run multiple tasks concurrently, not sequentially |
-| ⏱️ **Timeout Protection** | Auto-terminate tasks after configurable timeout (default: 5 min) |
-| 🛡️ **Error Isolation** | One task failure doesn't block others |
-| 📊 **Real-time Progress** | Live status updates during execution |
-| 📋 **Smart Output** | Numbered results mapping to each task |
+**场景：你让 AI 同时调研 10 个竞品**
 
----
+❌ **普通方式**：一个一个查，查完第一个再查第二个，超级慢
+✅ **用这个 Skill**：同时启动 10 个子任务一起查，快 10 倍
 
-## 📊 Performance Comparison
-
-```
-SERIAL (before):
-Task 1 → Task 2 → Task 3    Total: 15 minutes
-
-PARALLEL (after):
-Task 1 ─┬─> Total: 5 minutes ⚡
-Task 2 ─┼─> 200% faster!
-Task 3 ─┘
-```
+**典型使用场景：**
+- 📡 同时抓取多个网站内容（比串行快 5-10 倍）
+- 🔍 同时搜索多个平台
+- 📊 同时分析多个文件
+- 🧪 同时测试多个接口
 
 ---
 
-## 🚀 Quick Start
+## ⚡ 性能对比
 
-### Installation
+```
+串行（Before）：
+任务1 → 任务2 → 任务3    总耗时：15 分钟
 
-Copy the `parallel-tasks` skill folder to your OpenClaw skills directory:
+并行（After）：
+任务1 ─┬─> 总耗时：5 分钟 ⚡
+任务2 ─┼─> 提升 200%！
+任务3 ─┘
+```
+
+---
+
+## 🚀 快速开始
+
+### 安装
 
 ```bash
-# Assuming your OpenClaw workspace is ~/.openclaw/workspace
+# 方式1：openclaw CLI 安装（推荐）
+openclaw skills install https://github.com/qiukui666/openclaw-skill-parallel-tasks/archive/refs/tags/v1.0.0.tar.gz
+
+# 方式2：手动安装
 cp -r parallel-tasks ~/.openclaw/workspace/skills/
 ```
 
-### Usage
-
-#### Basic Parallel Execution
+### 使用
 
 ```
 /parallel
-- Search for documentation
-- Find code examples
-- Check existing implementations
+- 搜索竞品A的信息
+- 搜索竞品B的信息
+- 搜索竞品C的信息
 ```
 
-#### Named Tasks with Custom Timeout
+### 效果
+
+```
+🚀 正在并行执行 3 个任务...
+
+✅ [1/3] 竞品A调研 完成 (23s)
+✅ [2/3] 竞品B调研 完成 (31s)
+✅ [3/3] 竞品C调研 完成 (18s)
+
+⏱️ 总耗时：31 秒（串行需要约 72 秒）
+```
+
+---
+
+## 📖 详细用法
+
+### 输入格式
+
+#### 1. 列表格式（推荐）
+
+```
+/parallel
+- 任务1描述
+- 任务2描述
+- 任务3描述
+```
+
+#### 2. 命名任务（便于追踪）
+
+```
+/parallel
+[后端] 实现用户认证API
+[前端] 构建登录表单组件
+[测试] 编写集成测试用例
+```
+
+#### 3. 自定义超时
 
 ```
 /parallel timeout=600
-- [research] Research market trends
-- [implement] Build feature X
-- [test] Write comprehensive tests
-```
-
-#### Multi-line Input
-
-```
-/parallel
-Task 1: Read all config files
-Task 2: Analyze source code
-Task 3: Generate test cases
+- [调研] 研究AI Agent行业趋势 (timeout=300)
+- [实现] 开发完整功能 (timeout=600)
+- [测试] 全面测试 (timeout=900)
 ```
 
 ---
 
-## 📖 Detailed Usage
-
-### Input Formats
-
-#### 1. Bullet List (Recommended)
+## 🔧 工作原理
 
 ```
-/parallel
-- First task description
-- Second task description
-- Third task description
-```
-
-#### 2. Numbered List
-
-```
-/parallel
-1. Research authentication patterns
-2. Design database schema
-3. Implement API endpoints
-```
-
-#### 3. Named Tasks
-
-```
-/parallel
-[research] Gather requirements and analyze use cases
-[design] Create system architecture diagram
-[implement] Write production-ready code
-```
-
-#### 4. JSON (Advanced)
-
-```json
-/parallel
-{
-  "tasks": [
-    { "name": "task1", "description": "...", "timeout": 300 },
-    { "name": "task2", "description": "...", "timeout": 600 }
-  ],
-  "options": {
-    "stopOnError": false,
-    "reportProgress": true
-  }
-}
-```
-
-### Output Format
-
-```
-[Parallel Execution]
-
-① [research] ✅ Complete (1m 23s)
-② [design] ✅ Complete (45s)
-③ [implement] ⏱️ Timeout (5m 00s)
-④ [test] ❌ Failed: Connection error
-
-┌─────────────┬──────────┬────────────┐
-│ Task        │ Status   │ Duration   │
-├─────────────┼──────────┼────────────┤
-│ research    │ ✅ Done  │ 1m 23s    │
-│ design      │ ✅ Done  │ 45s       │
-│ implement   │ ⏱️ Timeout│ 5m 00s   │
-│ test        │ ❌ Failed│ 12s       │
-└─────────────┴──────────┴────────────┘
-
-Summary: 2 succeeded, 1 timeout, 1 failed
+你：帮我同时调研10个竞品
+         │
+         ▼
+┌─────────────────────────────────────────┐
+│        Parallel Tasks Skill              │
+│                                         │
+│  同时启动 N 个子任务（默认最多5个）       │
+│                                         │
+│  ┌───────┐ ┌───────┐ ┌───────┐         │
+│  │任务1  │ │任务2  │ │任务3  │ ...     │
+│  │(子代理)│ │(子代理)│ │(子代理)│         │
+│  └───────┘ └───────┘ └───────┘         │
+│         │         │         │           │
+│         └─────────┼─────────┘           │
+│                   ▼                     │
+│         汇总结果，返回给你               │
+└─────────────────────────────────────────┘
 ```
 
 ---
 
-## ⚙️ Configuration
+## 🎯 适用场景
 
-### Global Options
-
-| Option | Default | Description |
-|--------|---------|-------------|
-| `timeout` | 300 | Default timeout per task (seconds) |
-| `stopOnError` | false | Stop all tasks if one fails |
-| `reportProgress` | true | Show real-time progress |
-
-### Per-Task Options
-
-```markdown
-[TaskName] task description (timeout=600)
-```
+| ✅ 适合 | ❌ 不适合 |
+|---------|----------|
+| 同时搜索多个平台 | 任务之间有依赖（任务2需要任务1的结果） |
+| 同时抓取多个网页 | 超快速任务（子代理启动开销不值得） |
+| 同时分析多个文件 | 需要共享状态的任务 |
+| 同时测试多个接口 | |
 
 ---
 
-## 🎯 Best Practices
+## ⚙️ 配置
 
-### ✅ Ideal Use Cases
-
-| Use Case | Example |
-|----------|---------|
-| Multi-source research | Search multiple websites simultaneously |
-| Batch file operations | Read/write multiple files at once |
-| API polling | Check multiple endpoints in parallel |
-| Independent analysis | Analyze different aspects concurrently |
-
-### ❌ Avoid For
-
-| Scenario | Reason |
-|----------|--------|
-| Dependent tasks | Task B needs Task A's result |
-| Ultra-fast tasks | Spawning overhead not worth it |
-| Shared state | Tasks need to communicate |
+| 参数 | 默认值 | 说明 |
+|------|--------|------|
+| `timeout` | 300秒 | 每个任务超时时间 |
+| `maxConcurrent` | 5 | 最大并发数 |
+| `stopOnError` | false | 一个失败是否全部停止 |
 
 ---
 
-## 🔧 Architecture
+## 📦 发布说明
 
-```
-┌─────────────────────────────────────────────────────┐
-│                   User Request                        │
-│                  "Run these in parallel"             │
-└─────────────────────┬───────────────────────────────┘
-                      │
-                      ▼
-┌─────────────────────────────────────────────────────┐
-│              Parallel Tasks Skill                     │
-│  ┌─────────────┐  ┌─────────────┐  ┌─────────────┐  │
-│  │  Task 1    │  │  Task 2    │  │  Task 3    │  │
-│  │ (spawn)    │  │ (spawn)    │  │ (spawn)    │  │
-│  │ timeout=300│  │ timeout=300│  │ timeout=300│  │
-│  └─────┬──────┘  └─────┬──────┘  └─────┬──────┘  │
-│        │               │               │          │
-│        ▼               ▼               ▼          │
-│  ┌─────────────────────────────────────────────┐  │
-│  │         Promise.allSettled()                 │  │
-│  │    (waits for all, captures results)         │  │
-│  └─────────────────────┬───────────────────────┘  │
-│                        │                           │
-│                        ▼                           │
-│  ┌─────────────────────────────────────────────┐  │
-│  │           Result Aggregator                   │  │
-│  │  - ✅ Completed → Return result               │  │
-│  │  - ⏱️ Timeout → Terminate + report           │  │
-│  │  - ❌ Error → Capture + continue             │  │
-│  └─────────────────────────────────────────────┘  │
-└─────────────────────────────────────────────────────┘
-                      │
-                      ▼
-              Final Summary Report
-```
+当前版本：**v1.0.0**
+
+包含：
+- `SKILL.md` - Skill 元数据定义
+- `scripts/executor.ts` - 并行执行器
+- `README.md` - 本文档
 
 ---
 
-## 📝 Skill Definition
+## 🤝 贡献
 
-```markdown
----
-name: parallel-tasks
-description: Execute multiple tasks in parallel with timeout protection, 
-             error isolation, and real-time progress feedback. Use when 
-             user says "run these in parallel", "parallel execution", 
-             "concurrent tasks", or wants multiple independent tasks 
-             done simultaneously.
----
-```
-
----
-
-## 🤝 Contributing
-
-Contributions are welcome! Please feel free to submit a Pull Request.
-
-1. Fork the repository
-2. Create your feature branch (`git checkout -b feature/amazing-feature`)
-3. Commit your changes (`git commit -m 'Add some amazing feature'`)
-4. Push to the branch (`git push origin feature/amazing-feature`)
-5. Open a Pull Request
+欢迎提交 Issue 和 Pull Request！
 
 ---
 
 ## 📄 License
 
-This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
+MIT License
 
 ---
 
-## 👤 Author
+## 👤 作者
 
-**qiukui666**
-- GitHub: [@qiukui666](https://github.com/qiukui666)
-
----
-
-## 🙏 Acknowledgments
-
-- [OpenClaw](https://github.com/openclaw/openclaw) - The multi-channel gateway for AI agents
-- Built with 💜 for the OpenClaw community
+**qiukui666** - [GitHub](https://github.com/qiukui666)
 
 ---
 
 <div align="center">
-
-**Star ⭐ if this skill was useful to you!**
-
+如果你觉得这个 Skill 有用，给个 ⭐ 吧！
 </div>
