@@ -1,0 +1,5 @@
+[main/sessions/5d9031cb-88ee-423b-8928-65fc7b314357.jsonl.reset.2026-04-10T20-00-01.348Z#L5] User: 可以，你检查一下
+[main/sessions/5d9031cb-88ee-423b-8928-65fc7b314357.jsonl.reset.2026-04-10T20-00-01.348Z#L6] Assistant: 好的老板，我来检查一下系统状态~
+[main/sessions/5d9031cb-88ee-423b-8928-65fc7b314357.jsonl.reset.2026-04-10T20-00-01.348Z#L14] Assistant: 好的老板，我已经检查了系统状态，以下是详细的检查结果： ## 📊 系统健康状态报告 ### ✅ 正常运行的组件 - **OpenClaw 核心**：版本2026.4.1，模型运行正常 - **Gateway 服务**：运行中（PID 14156），监听端口18789，RPC探针正常 - **内存使用**：1.1Gi/7.6Gi（使用率14.5%），充足可用 - **CPU负载**：18.3%用户 + 6.1%系统 = 24.4%总使用率，72%空闲 - **服务渠道**：
+[main/sessions/75da27ab-91b2-4496-ac65-609af127c376.jsonl.reset.2026-04-11T18-38-07.910Z#L5] User: [message_id: om_x100b52a49556bca0b28374c458a1710] ou_79fddd09c23cfbf57b5ffd500263a7d2: 在吗
+[main/sessions/75da27ab-91b2-4496-ac65-609af127c376.jsonl.reset.2026-04-11T18-38-07.910Z#L6] Assistant: 在呢在呢～ 🌸 老板有什么需要小露帮忙的吗？我一直在的！

@@ -1,0 +1,43 @@
+# 2026-04-17 日志
+
+## 飞书卡片流式输出 Skill 制作
+
+### 需求
+用户要求给 Hermes 飞书机器人做一个 skill，实现卡片流式输出。
+
+### Hermes 已有基础设施（重要发现）
+- `FeishuAdapter.send_streaming_card(chat_id, greeting, subtitle)` — 创建流式卡片
+- `FeishuAdapter._update_card_element(card_id, element_key, new_text, sequence, tenant_token)` — 更新卡片元素
+- `FeishuAdapter.finalize_streaming_card()` — 标记完成
+- 底层用 `lark_oapi` SDK 的 CardKit API
+- 流式逻辑在 `send()` 方法中：emoji 首行 = 工具进度，纯文本 = thinking 内容更新
+
+### Skill 位置
+- `/home/qiukui/.openclaw/workspace/skills/feishu-streaming/SKILL.md`（已创建框架）
+- 底层调用 Hermes Python API，非独立实现
+
+### 任务看板
+- 文件：`AGENT_TASK_BOARD.md`
+- 任务线：feishu-streaming-skill
+- 当前节点：implement-skill（Claude agent 正在写 skill 实现）
+
+### Claude Code Agency Agents 派发协议（已写入 MEMORY.md）
+- 主 agent 判断任务领域 → 派给 Claude Code + 对应 agent
+- 子 agent 回报格式：tag + line + goal_status + next_role + 5字段报告
+- 派发命令：`openclaw sessions spawn --name <agent> --runtime ccoder -- <agent-name> [任务描述]`
+- 已装 173 个 CCB agents，路径：`~/.claude/plugins/marketplaces/thedotmack/site/agents/`
+
+### Workspace git 状态
+- 远程指向 `qiukui666/openclaw-skill-parallel-tasks`（skill 专用 repo）
+- push 会被规则拒（内容不是 parallel-tasks）
+- 本地 git 正常，未提交变更已清理（34→0）
+- 决定：不推远程，本地保留即可
+
+### 今日完成
+- [x] review.sh 语法修复（grep -v 改 awk）
+- [x] 3个 cron timeout 调大（60→120s）
+- [x] 微信文章抓取方案（Playwright + 丢链接）
+- [x] 豆包生图（--ui 模式防验证码）
+- [x] Claude Code agents 派发协议写入 MEMORY.md
+- [x] 飞书卡片流式 skill 框架搭好
+- [x] Hermes 流式卡片底层研究清楚

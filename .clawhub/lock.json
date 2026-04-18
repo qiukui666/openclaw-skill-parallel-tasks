@@ -1,0 +1,13 @@
+{
+  "version": 1,
+  "skills": {
+    "agent-retro": {
+      "version": "1.0.0",
+      "installedAt": 1776452759195
+    },
+    "weibo-hot-trend": {
+      "version": "1.0.0",
+      "installedAt": 1776477590347
+    }
+  }
+}
